@@ -8,6 +8,7 @@ on:
     tags:
       - "v*"
   pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, converted_to_draft]
     branches:
       - master
       - main
@@ -20,11 +21,15 @@ permissions:
 env:
   REGISTRY: ghcr.io
 
+concurrency:
+  group: unraid-${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   build:
+    if: ${{ github.event.pull_request.draft != true }}
     name: Build container image
-    runs-on: ubuntu-latest
-
+    runs-on: ${{ (github.event_name != 'pull_request_target' && github.event_name != 'issue_comment' && github.event_name != 'pull_request_review' && (!github.event.pull_request.head.repo.full_name || github.event.pull_request.head.repo.full_name == github.repository)) && fromJSON('["self-hosted", "Linux", "X64", "roadie", "unraid"]') || fromJSON('["ubuntu-24.04"]') }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
